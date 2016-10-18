@@ -12,6 +12,6 @@ fi
 
 JSON=$1
 
-JQ_COMMAND=".BlastOutput2[].report | .results | {peptide: .search.hits[0].hsps[0].qseq, num_samples: .search.query_title, description: .search.hits[0].description[0].title, id: .search.hits[0].description[0].id}"
+JQ_COMMAND=".BlastOutput2[].report | .results | {peptide: .search.hits[0].hsps[0].qseq, num_samples: .search.query_title, description: .search.hits[0].description[0].title, id: .search.hits[0].description[0].id} "
 
 jq "$JQ_COMMAND" $JSON > best_matches.txt
