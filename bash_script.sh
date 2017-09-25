@@ -1,17 +1,7 @@
 # Biomarker peptide identification
-# Fredrik Boulund 2016
-#
-# Usage instructions:
-# 1. Directory structure
-#	./
-#	./samples.txt
-#   ./discpeps/
-# 2. Download discriminative peptides for each sample into the discpeps folder
-#    e.g. ./discpeps/<sample>.discriminative_peptides.txt for each sample. The
-#    format should be the four column TCUP format for discriminative peptides.
-# 3. Run this script!
+# Fredrik Boulund 2015-2017
 
-SPECIES="Haemophilus influenzae"
+SPECIES="Staphylococcus aureus"
 
 NUM_SAMPLES=`wc -l samples.txt | awk '{print $1}'`
 echo "Found $NUM_SAMPLES in samples.txt"
@@ -25,7 +15,6 @@ done
 # Extract sequences for all unique peptides from discriminative peptide files
 # This step discards duplicates.
 echo "Extracting peptide sequences"
-mkdir -p peps
 for f in `ls discpeps/*.dpeps`; do 
 	BASENAME=$(basename ${f%%.*}); 
 	awk '{print $2}' $f | sort | uniq > peps/$BASENAME.peps;
@@ -42,6 +31,13 @@ grep -f shared_peptides.txt peptide_counts.txt | \
 	awk -v num_samples=$NUM_SAMPLES '{if ($1>(num_samples-1)) print $1, $2}' > shared_peptide_counts.txt
 
 
+if [ -e peptide_counts_all.txt ]
+then
+	echo "WARNING: removing existing peptide_counts_all.txt in 5 seconds"
+	sleep 5
+	rm -fv peptide_counts_all.txt
+fi
+
 echo "Count how many samples each peptide occurs in"
 for peptide in `awk '{print $2}' peptide_counts.txt`; do 
 	COUNT=`grep $peptide peps/*.peps | cut -f1 -d":" | sort | uniq | wc -l`
@@ -49,3 +45,19 @@ for peptide in `awk '{print $2}' peptide_counts.txt`; do
 	echo "$peptide" >> peptide_counts_all.txt
 done
 
+# Perform BLAST search to retrieve most likely source and short description of each peptide
+sed 's/^/>/' peptide_counts_all.txt | sed 's/ /\n/' > peptide_counts_all.fasta
+# Requires blast+ 2.3.0 or greater
+blastp \
+	-db /shared/genbank/nr/2015-11-11/nr \
+	-query peptide_counts_all.fasta \
+	-out peptide_counts_all.fasta.json \
+	-outfmt 15 \
+	-num_threads 10 \
+	-evalue 20000 \
+	-word_size 2 \
+	-gapopen 9 \
+	-gapextend 1 \
+	-matrix PAM30 \
+	-threshold 11 \
+	-comp_based_stats 0 

@@ -5,7 +5,7 @@
 from sys import argv, exit
 
 if len(argv) < 2:
-    print("usage: script.py blast_best_hits.txt peptides.fasta")
+    print("usage: script.py blast_best_hist.txt peptides.fasta")
     exit()
 
 
@@ -28,11 +28,16 @@ def insert_z_mh(filename, peptides):
             if "peptide" in line:
                 peptide = line.split(":")[1].strip('",\n ')
                 print(line.rstrip())
-                print('  "peptide_info": "{}",'.format(peptides[peptide]))
+                try:
+                    print('  "peptide_info": "{}",'.format(peptides[peptide]))
+                except KeyError:
+                    pass
+                    #print('  "ERROR": "ERROR!"')
             else:
                 print(line.rstrip())
 
 if __name__ == "__main__":
     best_hits, peptides_fasta = argv[1:3]
     peptides = peptide_dict(peptides_fasta)
+    #print(peptides)
     insert_z_mh(best_hits, peptides)
